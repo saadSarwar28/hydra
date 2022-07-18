@@ -2,15 +2,17 @@
 
 pragma solidity ^0.8.10;
 
-//import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/IERC20.sol";
-//import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol";
-//import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/Context.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
+import "openzeppelin-solidity/contracts/utils/Context.sol";
+import "openzeppelin-solidity/contracts/access/Ownable.sol";
 
- import "./OpenZeppelin/token/ERC20/IERC20.sol";
- import "./OpenZeppelin/utils/Context.sol";
- import "./OpenZeppelin/access/Ownable.sol";
+interface IUniswapV2Factory {
+    function createPair(address tokenA, address tokenB)
+    external
+    returns (address pair);
+}
 
-interface IUniswapV2Router02 {
+interface IUniswapRouterV2 {
     function swapExactTokensForETHSupportingFeeOnTransferTokens(
         uint256 amountIn,
         uint256 amountOutMin,
@@ -51,19 +53,20 @@ contract HydraToken is Context, IERC20, Ownable {
     string private _name = "Hydra Token";
     string private _symbol = "HYRA";
 
-    uint public MAX_SUPPLY = 1_000_000_000 * 10**18;
+    uint public MAX_SUPPLY = 100_000_000 * 10**18;
 
     uint public MAX = 2_000_000 * 10**18; // max purchase/sale/balance
 
     address public MARKET;
     address public DEV;
     address public UNISWAP_ROUTER;
-    uint public TAX_P;
-    uint public TAX_S;
-    uint public TAX_P_D;
-    uint public TAX_P_M;
-    uint public TAX_S_D;
-    uint public TAX_S_M;
+    address public UNISWAP_PAIR;
+    uint private TAX_P;
+    uint private TAX_S;
+    uint private TAX_P_D;
+    uint private TAX_P_M;
+    uint private TAX_S_D;
+    uint private TAX_S_M;
 
     mapping (address => bool) public B_L;
     mapping (address => bool) public W_L;
@@ -79,10 +82,23 @@ contract HydraToken is Context, IERC20, Ownable {
         inSwap = false;
     }
 
-    constructor(address market, address dev, address router, uint tax_p, uint tax_s, uint tax_p_d, uint tax_p_m, uint tax_s_d, uint tax_s_m) {
+    constructor(
+        address market,
+        address dev,
+        address router,
+        uint tax_p,
+        uint tax_s,
+        uint tax_p_d,
+        uint tax_p_m,
+        uint tax_s_d,
+        uint tax_s_m
+    ) {
+
+        UNISWAP_ROUTER = router;
+        UNISWAP_PAIR = IUniswapV2Factory(IUniswapRouterV2(router).factory()).createPair(address(this), IUniswapRouterV2(router).WETH());
+
         MARKET = market;
         DEV = dev;
-        UNISWAP_ROUTER = router;
         TAX_P = tax_p;
         TAX_S = tax_s;
         TAX_P_D = tax_p_d;
@@ -172,16 +188,45 @@ contract HydraToken is Context, IERC20, Ownable {
         address recipient,
         uint256 amount
     ) internal virtual {
-        require(sender != address(0), "ERC20: transfer from the zero address");
-        require(recipient != address(0), "ERC20: transfer to the zero address");
-
+        require(sender != address(0), "ERC20: transfer from zero address");
+        require(recipient != address(0), "ERC20: transfer to zero address");
+        require(!P_T, "Hydra: Trading paused");
+        require(!B_L[sender] && !B_L[recipient], "Hydra: blacklisted");
         _beforeTokenTransfer(sender, recipient, amount);
-
+        if(amount > MAX) {
+            require((W_L[sender] || W_L[recipient]) || (L_L[sender] || L_L[recipient]), "Hydra: amount exceeds max allowed");
+        }
         uint256 senderBalance = _balances[sender];
         require(senderBalance >= amount, "ERC20: transfer amount exceeds balance");
-    unchecked {
-        _balances[sender] = senderBalance - amount;
-    }
+
+        // fee for buy
+        if(sender == UNISWAP_PAIR && recipient != UNISWAP_ROUTER) {
+            if(!W_L[recipient] || !L_L[recipient]) {
+                uint t_t = (amount / 100) * TAX_P;
+                swapTokensForEth(((t_t / 100) * TAX_P_D), DEV); // dev share
+                swapTokensForEth(((t_t / 100) * TAX_P_M), MARKET); // market share
+                amount = amount - t_t;
+            }
+        }
+
+        // fee for sell
+        if(recipient == UNISWAP_PAIR && sender != UNISWAP_ROUTER) {
+            if(!W_L[sender] || !L_L[sender]) {
+                uint t_t = (amount / 100) * TAX_S;
+                swapTokensForEth(((t_t / 100) * TAX_S_D), DEV); // dev share
+                swapTokensForEth(((t_t / 100) * TAX_S_M), MARKET); // market share
+                amount = amount - t_t;
+            }
+        }
+
+        if(!W_L[recipient] || !L_L[recipient]) {
+            require(_balances[recipient] + amount <= MAX, "Hydra: max amount exceeded");
+        }
+
+        unchecked {
+            _balances[sender] = senderBalance - amount;
+        }
+
         _balances[recipient] += amount;
 
         emit Transfer(sender, recipient, amount);
@@ -250,6 +295,7 @@ contract HydraToken is Context, IERC20, Ownable {
             _mint(to, amount);
         } else {
             require(amount <= MAX, "Max amount exceeded");
+            require(_balances[to] + amount <= MAX, "Max amount exceeded");
             _mint(to, amount);
         }
     }
@@ -286,7 +332,7 @@ contract HydraToken is Context, IERC20, Ownable {
         }
     }
 
-    function addToLL(address[] calldata accounts, bool _L) public onlyOwner {
+    function changeLL(address[] calldata accounts, bool _L) public onlyOwner {
         for (uint i = 0; i < accounts.length; i++) {
             L_L[accounts[i]] = _L;
         }
@@ -300,26 +346,18 @@ contract HydraToken is Context, IERC20, Ownable {
         MAX = max;
     }
 
-    // transfer and fee handlers
-
-    function swapTokensForEth(uint256 tokenAmount) private lockTheSwap {
+    function swapTokensForEth(uint256 tokenAmount, address to) private lockTheSwap {
         address[] memory path = new address[](2);
         path[0] = address(this);
-        path[1] = IUniswapV2Router02(UNISWAP_ROUTER).WETH();
+        path[1] = IUniswapRouterV2(UNISWAP_ROUTER).WETH();
         _approve(address(this), address(UNISWAP_ROUTER), tokenAmount);
-        IUniswapV2Router02(UNISWAP_ROUTER).swapExactTokensForETHSupportingFeeOnTransferTokens(
+        IUniswapRouterV2(UNISWAP_ROUTER).swapExactTokensForETHSupportingFeeOnTransferTokens(
             tokenAmount,
             0,
             path,
-            address(this),
+            to,
             block.timestamp
         );
     }
 
-    function sendFeeBuy(uint256 amount) private lockTheSwap {
-        uint256 marketingShare = (amount / 100) * TAX_P_M;
-        uint256 devShare = (amount / 100) * TAX_P_D;
-        payable(MARKET).transfer(marketingShare);
-        payable(DEV).transfer(devShare);
-    }
 }

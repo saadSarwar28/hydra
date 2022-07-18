@@ -9,6 +9,8 @@
   "dependencies": {
     "erc721a": "^4.1.0",
     "truffle-plugin-verify": "^0.5.26",
+    "@truffle/hdwallet-provider": "^2.0.1",
+    "openzeppelin-solidity": "4.4.2",
     "truffle-contract-size": "^2.0.1"
   },
   "devDependencies": {},

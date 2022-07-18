@@ -1,50 +1,33 @@
-const brokerDefiPartner = artifacts.require("BrokerDefiPartner");
-const brokerDefiPro = artifacts.require("BrokerDefiPro");
+const hydra = artifacts.require("HydraToken");
 
 module.exports = async function (deployer) {
 
-    const maxNfts = 2500
-    const treasury = '0xA97F7EB14da5568153Ea06b2656ccF7c338d942f' // saad's address
-    // const publicSalePrice = '15000000000000000'  // 0.015 ether for testing
-    const publicSalePrice = '1250000000000000000'  // 1.25 ether
-    const maxPerTrx = 5
-    const allocatedForTeam = 250
-    const partnerCommission = 10
-    const partnerDiscount = 10
+    // for main net
+    const markettingAddress = '0xA04B39F3da5aC4aF711a165ff61329D92764661b'
+    const devAddress = '0x2A65AadEeAfeee6a16Cbd7254734043b938D6a77'
+    const uniswapRouter = '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'
+
+    const purchaseTax = 5
+
+    const purchaseTaxShareDev = 50
+    const purchaseTaxShareMarketing = 50
+
+    const sellTax = 15
+
+    const sellTaxShareDev = 50
+    const sellTaxShareMarketing = 50
 
     await deployer.deploy(
-        brokerDefiPartner,
-        maxNfts,
-        treasury,
-        publicSalePrice,
-        maxPerTrx,
-        allocatedForTeam,
-        partnerCommission,
-        partnerDiscount
+        hydra,
+        markettingAddress,
+        devAddress,
+        uniswapRouter,
+        purchaseTax,
+        sellTax,
+        purchaseTaxShareDev,
+        purchaseTaxShareMarketing,
+        sellTaxShareDev,
+        sellTaxShareMarketing
     )
-    const BrokerDefiPartner = await brokerDefiPartner.deployed()
-
-    const publicSalePricePro = '15000000000000000'  // 0.015 ether
-    const allocatedForTeamPro = 250
-    const partnerAddress = BrokerDefiPartner.address
-    // const partnerAddress = '0x6962fD2b754cbAee1d2FE6F54ed59c1D91A534C6'
-    const proCommission = 10
-    const proDiscount = 10
-    const partnerCommissionForPro = 10
-    const partnerDiscountForPro = 10
-
-    await deployer.deploy(
-        brokerDefiPro,
-        treasury,
-        publicSalePricePro,
-        allocatedForTeamPro,
-        partnerAddress,
-        partnerCommissionForPro,
-        proCommission,
-        partnerDiscountForPro,
-        proDiscount
-    )
-    const BrokerDefiPro = await brokerDefiPro.deployed()
-
 };
 
