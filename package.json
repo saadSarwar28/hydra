@@ -7,11 +7,12 @@
     "test": "test"
   },
   "dependencies": {
-    "erc721a": "^4.1.0",
-    "truffle-plugin-verify": "^0.5.26",
     "@truffle/hdwallet-provider": "^2.0.1",
+    "@uniswap/v3-periphery": "^1.4.1",
+    "erc721a": "^4.1.0",
     "openzeppelin-solidity": "4.4.2",
-    "truffle-contract-size": "^2.0.1"
+    "truffle-contract-size": "^2.0.1",
+    "truffle-plugin-verify": "^0.5.26"
   },
   "devDependencies": {},
   "scripts": {
