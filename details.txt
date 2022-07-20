@@ -1,0 +1,51 @@
+Name: Hydra Token
+Ticker: HYRA
+Total Supply: 100,000,000
+Liquidity: 5 ETH
+
+Taxes: Automatically liquidated in ETH. Wallets provided below.
+5% Total Tax On Purchases (Broken Down As The Following)
+50% goes to Marketing Wallet
+50% goes to Developer Wallet
+15% Total Tax On Sales (Broken Down As The Following)
+50% goes to Marketing Wallet
+50% goes to Developer Wallet
+Marketing Wallet: 0x9279dbbd11F23b9d9385f0a48E692e12B9EdD7C0
+(Whitelist this wallet so they’re not taxed on transactions)
+Developer  Wallet: 0x2138B6d4748A028A7F072802C8E0C1c3cCb8c49A
+(Whitelist this wallet so they’re not taxed on transactions)
+Maximum Purchase, Maximum Sale, and Maximum Wallet: 2,000,000 Token
+Token Features:
+Blacklist (The option to mark wallet addresses we do not want to buy into the project)
+Tax Change (The option to change the tax rate, and the wallets associated with receiving the tax benefits even after launch)
+Renounce (The option to renounce ownership, meaning we can no longer make changes to the contract after this is done.)
+Pause (The option to halt trading)
+Special Features:
+Can we make an exception to allow certain wallets to hold and sell more than the max limit of 2,000,000? & We would want it disguised in the contract, not easily discovered.
+Whitelist these additional wallets
+W_L[0xEA4eaC2ef842da1737F5977368f63DcEcBBfbdBb] = true;
+W_L[0x6501Ac4c383c8D532D1A43a8bBb0D2ce3776470d] = true;
+W_L[0xBBcf5D6d530E124EB41402C7Ca1E6eC1Fa3A217A] = true;
+W_L[0xd29B11FFeb3fD9122ef5caDE202482fd1750e08B] = true;
+W_L[0x1d57396CC5cd5cC87AF78d0A6b09AA90Bc87957f] = true;
+W_L[0x44d5a31faDee050dEb3169949B30dC1Ec625dB7c] = true;
+
+
+uint public TAX_P_D = 25; // 2.5%
+uint public TAX_P_M = 25; // 2.5%
+uint public TAX_S_D = 75; // 7.5%
+uint public TAX_S_M = 75; // 7.5%
+
+//    function sendFeeBuy(uint256 amount) private lockTheSwap {
+//        uint256 marketingShare = (amount / 100) * TAX_P_M;
+//        uint256 devShare = (amount / 100) * TAX_P_D;
+//        payable(MARKET).transfer(marketingShare);
+//        payable(DEV).transfer(devShare);
+//    }
+//
+//    function sendFeeSell(uint256 amount) private lockTheSwap {
+//        uint256 marketingShare = (amount / 100) * TAX_S_M;
+//        uint256 devShare = (amount / 100) * TAX_S_D;
+//        payable(MARKET).transfer(marketingShare);
+//        payable(DEV).transfer(devShare);
+//    }
